@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Sample Size You Really Need</title>
+<meta name="description" content="Sample size for trials with a binary outcome when patients' baseline risk varies: usual calculation versus the sample size actually required, with or without adjustment for a risk score.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<style>
+/* Layout: calculator column (inputs) beside a results column; summary first, details below; stacks to one column on phones. */
+:root{
+  --bg:#f6f7f9; --panel:#ffffff; --ink:#18212e; --muted:#5b6677; --line:#dde2ea; --soft:#eef1f5;
+  --formula:#6b7280; --required:#a30000; --adjusted:#1c4e80; --warn:#9a5b00; --warn-bg:#fff4e0; --ok:#1d6b4f;
+  --font-body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-num:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11161d; --panel:#18202a; --ink:#e6ebf2; --muted:#9aa6b6; --line:#2a3542; --soft:#1f2934;
+  --formula:#a3abb8; --required:#ff6b6b; --adjusted:#6aa8e8; --warn:#f2b45a; --warn-bg:#2d2414; --ok:#5fc59a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11161d; --panel:#18202a; --ink:#e6ebf2; --muted:#9aa6b6; --line:#2a3542; --soft:#1f2934;
+  --formula:#a3abb8; --required:#ff6b6b; --adjusted:#6aa8e8; --warn:#f2b45a; --warn-bg:#2d2414; --ok:#5fc59a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 48px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+header h1{font-size:1.75rem;line-height:1.2;margin:0 0 6px;font-weight:700;letter-spacing:-.01em;text-wrap:balance}
+header{text-align:center}
+header p{margin:0 auto;color:var(--muted);max-width:72ch;text-wrap:balance}
+.lede{display:flex;flex-direction:column;gap:4px;align-items:center;font-style:italic}
+.grid{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:18px;min-width:0}
+h2{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0;font-weight:600}
+fieldset{border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:12px;min-width:0}
+legend{padding:0;margin-bottom:10px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+label{display:flex;flex-direction:column;gap:4px;font-size:.88rem;font-weight:500;min-width:0}
+label small{color:var(--muted);font-weight:400;font-size:.78rem}
+input[type=number],select,textarea{font:inherit;font-family:var(--font-num);font-size:.92rem;color:var(--ink);background:var(--bg);
+  border:1px solid var(--line);border-radius:6px;padding:8px 10px;width:100%;min-width:0}
+textarea{min-height:110px;resize:vertical;font-size:.82rem}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--adjusted);outline-offset:1px}
+.tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:var(--soft);border-radius:8px;padding:3px;gap:3px}
+.tabs button{font:inherit;font-size:.86rem;font-weight:600;border:0;border-radius:6px;padding:8px 6px;background:transparent;color:var(--muted);cursor:pointer}
+.tabs button[aria-selected=true]{background:var(--panel);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.presets{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:.78rem;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:4px 10px;cursor:pointer}
+.chip:hover{border-color:var(--adjusted)}
+.btn{font:inherit;font-size:.85rem;font-weight:600;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:6px;padding:7px 12px;cursor:pointer}
+.btn:hover{border-color:var(--adjusted)}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.note{font-size:.8rem;color:var(--muted);margin:0}
+.msg{font-size:.84rem;border-radius:6px;padding:8px 10px;margin:0}
+.msg.err{background:var(--warn-bg);color:var(--warn)}
+.msg.info{background:var(--soft);color:var(--muted)}
+.check{flex-direction:row;align-items:flex-start;gap:8px;font-weight:400}
+.check input{margin-top:4px}
+.privacy{display:flex;gap:8px;align-items:flex-start;font-size:.8rem;color:var(--ok);margin:0}
+/* results */
+.summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+@media (max-width:560px){.summary{grid-template-columns:minmax(0,1fr)}}
+.stat{border:1px solid var(--line);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.stat .k{font-size:.78rem;color:var(--muted);font-weight:500}
+.stat .v{font-family:var(--font-num);font-size:1.7rem;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.2}
+.stat .s{font-size:.78rem;color:var(--muted)}
+.stat.formula{border-top:3px solid var(--formula)} .stat.formula .v{color:var(--formula)}
+.stat.required{border-top:3px solid var(--required)} .stat.required .v{color:var(--required)}
+.stat.adjusted{border-top:3px solid var(--adjusted)} .stat.adjusted .v{color:var(--adjusted)}
+.bars{display:flex;flex-direction:column;gap:8px}
+.bar{display:grid;grid-template-columns:150px minmax(0,1fr);gap:10px;align-items:center;font-size:.82rem}
+@media (max-width:480px){.bar{grid-template-columns:minmax(0,1fr)}}
+.track{background:var(--soft);border-radius:4px;height:14px;position:relative;overflow:hidden}
+.fill{height:100%;border-radius:4px}
+.fill.formula{background:var(--formula)} .fill.required{background:var(--required)} .fill.adjusted{background:var(--adjusted)}
+table{width:100%;border-collapse:collapse;font-size:.86rem}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+td.num{font-family:var(--font-num);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+th{font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+td .sub{display:block;color:var(--muted);font-size:.76rem}
+.tablewrap{overflow-x:auto}
+.chart svg{width:100%;height:auto;display:block}
+.chart .axis{stroke:var(--line)} .chart text{fill:var(--muted);font-size:11px;font-family:var(--font-body)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:.78rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{display:inline-block;width:14px;height:3px;border-radius:2px}
+.callout{border-left:3px solid var(--adjusted);background:var(--soft);padding:10px 12px;border-radius:0 6px 6px 0;font-size:.84rem;margin:0}
+details{font-size:.86rem}
+.methodbox{display:block}
+.methodbox summary{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+details summary{cursor:pointer;font-weight:600}
+details p{color:var(--muted);margin:.5em 0 0}
+.method{display:grid;grid-template-columns:minmax(0,190px) minmax(0,1fr);gap:8px 16px;margin:.8em 0 0;color:var(--muted)}
+.method dt{font-weight:600;color:var(--ink)}
+.method dd{margin:0}
+.formula{font-family:var(--font-num);font-size:.84rem;color:var(--ink);background:var(--soft);border-radius:6px;padding:8px 10px;margin:6px 0;overflow-x:auto;white-space:nowrap}
+@media (max-width:560px){.method{grid-template-columns:minmax(0,1fr)}.method dd{margin-bottom:6px}}
+footer{font-size:.78rem;color:var(--muted);max-width:90ch}
+code{font-family:var(--font-num);font-size:.85em}
+@media (prefers-reduced-motion:no-preference){.fill{transition:width .35s ease}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>The sample size you really need</h1>
+    <div class="lede">
+      <p>Sample sizes are usually calculated by applying the expected treatment effect to the average risk of the population.</p>
+      <p>But if the treatment lowers each patient's odds of the outcome by the same proportion and patients' risks differ, it prevents fewer events than this calculation assumes, and a trial sized this way is underpowered.</p>
+      <p>This calculator gives the sample size actually required, with or without adjustment for a risk score, for death or any other yes/no outcome.</p>
+    </div>
+  </header>
+
+  <div class="grid">
+    <!-- INPUTS -->
+    <form class="panel" id="form" novalidate>
+      <fieldset>
+        <legend><h2>Trial design</h2></legend>
+        <div class="row">
+          <label for="alpha">Two-sided α
+            <select id="alpha"><option value="0.05" selected>0.05</option><option value="0.025">0.025</option><option value="0.01">0.01</option></select>
+          </label>
+          <label for="power">Power
+            <select id="power"><option value="0.8" selected>80%</option><option value="0.85">85%</option><option value="0.9">90%</option></select>
+          </label>
+        </div>
+        <p class="note">Superiority, two arms, 1:1.</p>
+      </fieldset>
+
+      <fieldset>
+        <legend><h2>Your data</h2></legend>
+        <p class="note" style="margin-top:-6px">What do you know about the risk of the primary outcome in the population you plan to enroll?</p>
+        <div class="tabs" role="tablist">
+          <button type="button" role="tab" id="tab-summary" aria-selected="true" aria-controls="pane-summary">Mean and SD of risk</button>
+          <button type="button" role="tab" id="tab-indiv" aria-selected="false" aria-controls="pane-indiv">Each patient's risk</button>
+          <button type="button" role="tab" id="tab-tb" aria-selected="false" aria-controls="pane-tb">No data: use Traumabase</button>
+        </div>
+
+        <div id="pane-summary" role="tabpanel" aria-labelledby="tab-summary" style="display:flex;flex-direction:column;gap:12px">
+          <div class="row">
+            <label for="mean">Mean risk, %
+              <input type="number" id="mean" min="0.1" max="99.9" step="0.01" value="10.78">
+            </label>
+            <label for="sd">SD of risk, %
+              <input type="number" id="sd" min="0" max="50" step="0.1" value="21.5">
+            </label>
+          </div>
+          <p class="note">Mean and standard deviation (SD) of patients' predicted risk, for example from TRISS (Trauma and Injury Severity Score). Approximate result. Example values: Traumabase.</p>
+        </div>
+
+        <div id="pane-indiv" role="tabpanel" aria-labelledby="tab-indiv" hidden style="flex-direction:column;gap:12px">
+          <label for="risks">Predicted risk of each patient
+            <small>One predicted risk per line (0.12 or 12), from a population similar to your trial's, or load a CSV.</small>
+            <textarea id="risks" spellcheck="false" placeholder="0.004&#10;0.031&#10;0.92&#10;…"></textarea>
+          </label>
+          <div class="btnrow">
+            <label class="btn" for="file" style="flex-direction:row">Load a file<input type="file" id="file" accept=".csv,.txt,.tsv,text/plain" hidden></label>
+            <button type="button" class="btn" id="clear">Clear</button>
+          </div>
+          <p class="privacy">Your data stay on your computer.</p>
+          <p class="msg info" id="parseinfo" hidden></p>
+        </div>
+
+        <div id="pane-tb" role="tabpanel" aria-labelledby="tab-tb" hidden style="flex-direction:column;gap:12px">
+          <p class="note">60,243 trauma patients, 30 French centers. Outcome: ICU death.</p>
+          <label for="tbpop">Population
+            <select id="tbpop"></select>
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend><h2>Expected treatment effect</h2></legend>
+        <label for="scale">How the treatment acts
+          <select id="scale">
+            <option value="or" selected>Odds ratio</option>
+            <option value="rr">Relative risk</option>
+            <option value="ard">Absolute risk reduction</option>
+          </select>
+        </label>
+        <label for="effect"><span id="effectlabel">Expected odds ratio in each patient (below 1 = reduced risk)</span>
+          <input type="number" id="effect" step="0.01" value="0.70">
+        </label>
+        <p class="note" id="effecthint" style="font-style:italic"></p>
+      </fieldset>
+
+    </form>
+
+    <!-- RESULTS -->
+    <section class="panel" aria-live="polite">
+      <h2>Patients per arm, to detect the expected effect</h2>
+      <p class="msg err" id="error" hidden></p>
+      <div id="results">
+        <div class="summary">
+          <div class="stat formula"><span class="k">Usual calculation</span><span class="v" id="nF">–</span><span class="s">effect applied to the average risk</span></div>
+          <div class="stat required"><span class="k">Required, unadjusted analysis</span><span class="v" id="nA">–</span><span class="s" id="facA"></span></div>
+          <div class="stat adjusted"><span class="k">Required, adjusted analysis</span><span class="v" id="nJ">–</span><span class="s" id="facJ"></span></div>
+        </div>
+      </div>
+
+
+      <p class="callout" id="headline"></p>
+
+
+      <div class="chart">
+        <h2 style="margin-bottom:8px">Patients per arm according to the expected effect</h2>
+        <div id="chart"></div>
+        <div class="legend" id="legend"></div>
+      </div>
+
+    </section>
+  </div>
+
+  <details class="panel methodbox">
+        <summary>Method</summary>
+        <dl class="method">
+          <dt>Notation</dt>
+          <dd>p is each patient's predicted risk of the outcome, p̄ its mean in the population.</dd>
+          <dt>Usual calculation</dt>
+          <dd>Standard sample-size formula for comparing two proportions (normal approximation), with p<sub>C</sub> = p̄ in the control arm and p<sub>T</sub> = the expected effect applied to p̄ in the treated arm:
+            <div class="formula">n per arm = [ z<sub>1−α/2</sub> √(2 p<sub>m</sub>(1 − p<sub>m</sub>)) + z<sub>1−β</sub> √(p<sub>C</sub>(1 − p<sub>C</sub>) + p<sub>T</sub>(1 − p<sub>T</sub>)) ]² / (p<sub>C</sub> − p<sub>T</sub>)²</div>
+            where p<sub>m</sub> = (p<sub>C</sub> + p<sub>T</sub>)/2, z<sub>1−α/2</sub> = 1.96 for α = 0.05 and z<sub>1−β</sub> = 0.84 for 80% power.</dd>
+          <dt>Required, unadjusted analysis</dt>
+          <dd>Same formula, but the risk in the treated arm is the effect applied to each patient's risk, averaged over patients. With only the mean and SD, it is approximated as the usual calculation × 1/(1 − R²)², where R² = Var(p)/[p̄(1 − p̄)].</dd>
+          <dt>Required, adjusted analysis</dt>
+          <dd>Logistic regression on treatment and the logit of p, with a large-sample calculation of its variance. The risk score must be available for every patient at randomization.</dd>
+          <dt>Assumptions</dt>
+          <dd>Traumabase tab: as in the article, TRISS discriminates deaths with an AUC of 0.90. Each patient's risk tab: risks are taken as exact; with a less accurate score, more patients are needed, mainly for the adjusted analysis (about 30% more in the Traumabase with an AUC of 0.90).</dd>
+          <dt>Rounding</dt>
+          <dd>Required sample sizes are rounded to two significant digits.</dd>
+        </dl>
+  </details>
+  <footer>
+    Reference: James A, et al. Applying the treatment effect to mean mortality underestimates the sample size of mortality trials: a multicenter trauma registry-based simulation study (manuscript in preparation). This tool supports trial planning and does not replace a statistician's review.
+  </footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+
+// ---------- statistics ----------
+function qnorm(p){ // Acklam inverse normal CDF
+  const a=[-39.6968302866538,220.946098424521,-275.928510446969,138.357751867269,-30.6647980661472,2.50662827745924],
+        b=[-54.4760987982241,161.585836858041,-155.698979859887,66.8013118877197,-13.2806815528857],
+        c=[-0.00778489400243029,-0.322396458041136,-2.40075827716184,-2.54973253934373,4.37466414146497,2.93816398269878],
+        d=[0.00778469570904146,0.32246712907004,2.445134137143,3.75440866190742];
+  const pl=0.02425; let q,r;
+  if(p<pl){q=Math.sqrt(-2*Math.log(p));return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);}
+  if(p>1-pl){q=Math.sqrt(-2*Math.log(1-p));return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);}
+  q=p-0.5;r=q*q;return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+}
+function pnorm(x){ // W. J. Cody-quality erf approximation via complementary error function
+  const z=Math.abs(x)/Math.SQRT2, tt=1/(1+0.5*z);
+  const r=tt*Math.exp(-z*z-1.26551223+tt*(1.00002368+tt*(0.37409196+tt*(0.09678418+tt*(-0.18628806+tt*(0.27886807+tt*(-1.13520398+tt*(1.48851587+tt*(-0.82215223+tt*0.17087277)))))))));
+  return x>=0?1-r/2:r/2;
+}
+function nPerArm(p0,p1,alpha,power){
+  const za=qnorm(1-alpha/2), zb=qnorm(power), pb=(p0+p1)/2, d=Math.abs(p0-p1);
+  if(!(d>0)) return Infinity;
+  return Math.pow(za*Math.sqrt(2*pb*(1-pb))+zb*Math.sqrt(p0*(1-p0)+p1*(1-p1)),2)/(d*d);
+}
+function applyEffect(p,scale,e){
+  if(scale==="or"){const o=p/(1-p)*e;return o/(1+o);}
+  if(scale==="rr") return Math.min(1,p*e);
+  return Math.max(0,p-e); // ard (e as probability)
+}
+const odds=p=>p/(1-p);
+
+// ---------- state ----------
+let mode="summary", indivRisks=null;
+// Traumabase: aggregated distribution of predicted risk (200 risk bands on the logit scale; mean risk and share of patients per band)
+const TB={"Whole population":{"n":60243,"d":[[0.000234,5.533e-05],[0.000273,0.0003038],[0.000317,9.904e-05],[0.000369,1.549e-05],[0.000429,0.000275],[0.0005,0.0002114],[0.000541,3.87e-06],[0.000609,5.478e-05],[0.000683,5.53e-06],[0.000732,1.051e-05],[0.000787,7.193e-05],[0.000852,1.11e-06],[0.000923,0.0005279],[0.001066,7.746e-05],[0.001154,1.549e-05],[0.001246,1.881e-05],[0.001408,1.273e-05],[0.001453,1.273e-05],[0.001679,9.462e-05],[0.001817,7.75e-06],[0.001954,0.0003237],[0.002152,0.0008704],[0.002413,7.359e-05],[0.002653,0.001032],[0.002985,0.04463],[0.003258,0.01027],[0.003552,0.002745],[0.003853,0.05152],[0.004186,0.02555],[0.004549,0.007046],[0.005067,0.0007885],[0.005442,0.0384],[0.005844,0.06626],[0.006476,0.03307],[0.007279,0.02217],[0.008092,0.03364],[0.008823,0.01773],[0.009333,0.01455],[0.010326,0.02146],[0.011324,0.02903],[0.012327,0.01666],[0.013451,0.008055],[0.014705,0.0175],[0.016451,0.01384],[0.017356,0.02784],[0.01984,0.01364],[0.021662,0.03209],[0.023616,0.01483],[0.025779,0.01362],[0.02823,0.005471],[0.030197,0.02472],[0.032588,0.02307],[0.035823,0.01291],[0.040406,0.012],[0.04471,0.024],[0.048268,0.01239],[0.053059,0.007356],[0.056992,0.01121],[0.061709,0.02044],[0.06698,0.008804],[0.073147,0.006915],[0.078488,0.01043],[0.088158,0.01171],[0.092997,0.00847],[0.103833,0.01037],[0.112625,0.01386],[0.122812,0.009303],[0.132408,0.006602],[0.143713,0.00298],[0.152174,0.01145],[0.164627,0.003914],[0.177644,0.009334],[0.193409,0.005489],[0.210861,0.009245],[0.227219,0.003992],[0.240118,0.005888],[0.2616,0.001903],[0.276487,0.006335],[0.29619,0.002971],[0.315206,0.006721],[0.331013,0.003265],[0.351932,0.003677],[0.371348,0.007775],[0.39668,0.005756],[0.413906,0.002514],[0.44741,0.003914],[0.469185,0.002866],[0.493287,0.003238],[0.511019,0.002059],[0.53269,0.002167],[0.554776,0.005407],[0.577564,0.003437],[0.595881,0.002651],[0.628491,0.002035],[0.641704,0.003661],[0.670617,0.001853],[0.686751,0.001772],[0.707585,0.001668],[0.724958,0.00487],[0.742733,0.001232],[0.759844,0.00249],[0.774671,0.00113],[0.789275,0.003558],[0.802725,0.0008488],[0.82142,0.001734],[0.833944,0.001804],[0.848314,0.001793],[0.856889,0.0005865],[0.870739,0.002269],[0.879448,0.001019],[0.889057,0.001449],[0.896171,0.0009528],[0.906084,0.0007409],[0.911401,0.001665],[0.919986,0.001015],[0.924864,0.00115],[0.932718,0.001139],[0.937134,0.001414],[0.944385,0.0002053],[0.948361,0.001217],[0.952613,0.0004897],[0.956319,0.001348],[0.95927,0.0001477],[0.963093,0.0009019],[0.966994,0.00149],[0.969154,0.0003879],[0.971734,0.0002584],[0.974602,0.0007547],[0.975759,0.0006684],[0.978662,0.0004742],[0.980696,2.601e-05],[0.982132,0.0003895],[0.983663,0.0007254],[0.984879,6.695e-05],[0.986104,0.0003696],[0.987752,0.0002186],[0.988435,0.0006308],[0.989928,0.0003486],[0.990735,0.0001599],[0.991331,4.98e-05],[0.992067,0.0003193],[0.993039,1.107e-05],[0.993392,0.0004841],[0.994209,0.0004537],[0.994542,2.269e-05],[0.994834,1.66e-05],[0.995623,0.0002855],[0.995945,6.09e-06],[0.996153,3.32e-05],[0.996593,5.5e-07],[0.996892,0.001399],[0.997219,1.11e-06],[0.997259,3.32e-06],[0.997548,8.576e-05],[0.997752,5.5e-07],[0.99806,0.000384],[0.998222,0.0001328],[0.998347,1.937e-05],[0.998734,1.66e-05],[0.998846,4.98e-05],[0.999001,2.77e-06],[0.999321,5.53e-06],[0.999388,3.32e-05],[0.999455,0.0009628],[0.999591,1.217e-05],[0.9999,2.21e-06]]},"Hemorrhagic shock":{"n":3775,"d":[[0.000234,8.83e-06],[0.000273,4.415e-05],[0.000317,1.766e-05],[0.000429,4.415e-05],[0.0005,1.766e-05],[0.000581,1.766e-05],[0.000787,0.0001148],[0.000916,0.001033],[0.001066,2.649e-05],[0.001442,8.83e-06],[0.001683,4.415e-05],[0.001817,4.415e-05],[0.001952,1.766e-05],[0.002113,4.415e-05],[0.00229,3.532e-05],[0.002645,0.000106],[0.002921,0.0007947],[0.003073,2.649e-05],[0.003575,1.766e-05],[0.003855,0.002305],[0.004185,0.001166],[0.004549,0.0002737],[0.004958,0.000883],[0.00546,0.001616],[0.005837,0.01777],[0.006432,0.008071],[0.007193,0.004353],[0.008102,0.007965],[0.008842,0.005987],[0.009307,0.01114],[0.010327,0.01805],[0.011322,0.01008],[0.012307,0.01352],[0.013562,0.00294],[0.014726,0.02285],[0.016046,0.004336],[0.01733,0.01717],[0.019652,0.02019],[0.021753,0.01858],[0.023727,0.006676],[0.025842,0.0146],[0.028174,0.006861],[0.030306,0.02156],[0.032775,0.01466],[0.035967,0.009148],[0.040111,0.01809],[0.044856,0.02709],[0.048411,0.009377],[0.052948,0.01835],[0.057012,0.01347],[0.061668,0.02212],[0.0674,0.01032],[0.074319,0.008194],[0.078757,0.0192],[0.088376,0.01149],[0.092904,0.01609],[0.104598,0.01782],[0.111632,0.01145],[0.12316,0.00906],[0.132397,0.01813],[0.142456,0.005536],[0.152776,0.02693],[0.164969,0.009183],[0.177356,0.01761],[0.193573,0.007143],[0.210177,0.01363],[0.222929,0.008371],[0.243453,0.01685],[0.260181,0.00438],[0.277671,0.0194],[0.296949,0.003585],[0.314605,0.0116],[0.329764,0.009333],[0.355053,0.007603],[0.372398,0.01234],[0.40159,0.01451],[0.413545,0.00702],[0.4464,0.01231],[0.468105,0.008397],[0.494494,0.006834],[0.509842,0.007664],[0.53242,0.004715],[0.554948,0.01017],[0.579866,0.007214],[0.596926,0.009854],[0.623506,0.005121],[0.641205,0.01305],[0.669572,0.00543],[0.687006,0.008954],[0.708994,0.005536],[0.724968,0.01121],[0.744956,0.002411],[0.759314,0.01018],[0.774431,0.002773],[0.790228,0.01347],[0.80383,0.001651],[0.821958,0.008168],[0.832328,0.004327],[0.84954,0.007797],[0.858069,0.003347],[0.87044,0.0121],[0.878236,0.003735],[0.887571,0.005086],[0.895871,0.004071],[0.904845,0.002163],[0.911572,0.007161],[0.920461,0.004874],[0.924675,0.008079],[0.932862,0.00506],[0.937331,0.005342],[0.944691,0.0003532],[0.94818,0.004848],[0.952748,0.003585],[0.956252,0.008874],[0.959046,0.001333],[0.963208,0.005872],[0.967454,0.004503],[0.969276,0.0007947],[0.971756,0.001651],[0.974548,0.003461],[0.975573,0.005086],[0.978803,0.004565],[0.981036,2.649e-05],[0.982199,0.002667],[0.983464,0.001342],[0.986101,0.003444],[0.987808,0.00106],[0.988475,0.002402],[0.989923,0.002119],[0.990695,0.0006093],[0.992068,0.002914],[0.993439,0.003461],[0.994204,0.0008212],[0.994375,1.766e-05],[0.995625,0.0007947],[0.995968,2.649e-05],[0.996237,0.0002649],[0.99689,0.006896],[0.997552,0.0007947],[0.998066,0.002914],[0.998222,0.0002649],[0.998347,3.532e-05],[0.998846,0.0007947],[0.999388,0.0002649],[0.999455,0.002384]]},"Penetrating trauma":{"n":7679,"d":[[0.000234,0.0004341],[0.000273,0.002379],[0.000317,0.0007683],[0.000369,0.0001215],[0.000429,0.002157],[0.0005,0.001654],[0.000541,3.039e-05],[0.000609,0.0004297],[0.000683,4.341e-05],[0.000732,8.248e-05],[0.000787,0.0005643],[0.000852,8.68e-06],[0.000923,0.004128],[0.001066,0.0006077],[0.001154,0.0001215],[0.001246,0.0001476],[0.001408,9.984e-05],[0.001453,9.984e-05],[0.001679,0.0007423],[0.001817,6.077e-05],[0.001954,0.001107],[0.002113,0.0003863],[0.002334,0.0002127],[0.002646,0.001254],[0.003075,0.0008031],[0.003562,0.0004297],[0.003891,0.0006902],[0.004185,0.0001346],[0.004525,0.0001649],[0.005115,0.004519],[0.00555,0.1163],[0.005925,0.04699],[0.006652,0.109],[0.007188,0.04815],[0.00767,0.01928],[0.00873,0.014],[0.009307,0.1054],[0.010078,0.05009],[0.011375,0.005318],[0.012345,0.0346],[0.013755,0.006646],[0.01489,0.05273],[0.016493,0.01109],[0.017489,0.03278],[0.019316,0.02329],[0.021099,0.03053],[0.023474,0.005274],[0.025835,0.02275],[0.028295,0.02537],[0.030265,0.01458],[0.03341,0.008682],[0.036453,0.008282],[0.039485,0.01458],[0.044182,0.01485],[0.047654,0.005561],[0.05167,0.007649],[0.056819,0.006299],[0.061234,0.008382],[0.068218,0.005105],[0.075671,0.00504],[0.080431,0.0051],[0.087432,0.004662],[0.095529,0.003985],[0.103462,0.003803],[0.111061,0.003829],[0.121115,0.001237],[0.130718,0.003303],[0.144291,0.003963],[0.154472,0.0008899],[0.165689,0.003351],[0.178004,0.003694],[0.191828,0.001975],[0.207164,0.001841],[0.223752,0.000382],[0.241338,0.0008725],[0.260647,0.001411],[0.276892,0.000968],[0.298309,0.003034],[0.317824,0.001476],[0.330614,0.0008638],[0.350969,0.00352],[0.378029,0.001719],[0.405008,0.003646],[0.423033,0.001181],[0.442852,0.001363],[0.46463,0.0005513],[0.489379,0.0009333],[0.505518,0.0004949],[0.528004,0.004745],[0.552829,0.0005383],[0.581322,0.003403],[0.608198,0.0008248],[0.626068,0.0009246],[0.642219,0.001424],[0.666461,0.001311],[0.685321,0.001224],[0.708222,0.0003299],[0.723445,0.0008465],[0.74496,0.00105],[0.758309,0.0008248],[0.774514,0.004567],[0.793847,0.001485],[0.805594,0.0004688],[0.820535,0.002609],[0.833567,0.000408],[0.844726,0.0004818],[0.859185,0.001172],[0.867711,0.0003212],[0.877101,0.002418],[0.885256,0.0005296],[0.897785,0.0003212],[0.904789,0.001042],[0.90932,4.34e-06],[0.918692,0.002631],[0.927337,0.0004558],[0.931734,0.0007857],[0.936965,0.001424],[0.944876,0.0001302],[0.952551,0.003004],[0.955712,0.0007119],[0.958981,0.0006598],[0.962882,0.0002952],[0.966002,0.001315],[0.969731,0.0002605],[0.972014,0.0008855],[0.973448,0.0005296],[0.979237,0.0001346],[0.982858,0.0001389],[0.984168,0.001107],[0.984921,0.0001302],[0.98671,0.0001389],[0.987256,8.68e-06],[0.988852,0.00105],[0.99004,0.0001302],[0.990624,8.68e-06],[0.991245,0.0002605],[0.991861,0.000395],[0.99353,1.736e-05],[0.994187,4.341e-05],[0.994573,0.0001476],[0.995595,2.605e-05],[0.995885,8.68e-06],[0.996068,0.0001302],[0.996593,4.34e-06],[0.99683,1.302e-05],[0.997752,4.34e-06],[0.998097,0.002361],[0.998734,0.0001302],[0.999321,4.341e-05],[0.999388,0.0002605],[0.9999,1.736e-05]]},"Blunt trauma":{"n":52456,"d":[[0.001953,0.0002091],[0.002154,0.0009405],[0.002458,5.338e-05],[0.002654,0.001002],[0.002985,0.05125],[0.003259,0.01165],[0.003552,0.003088],[0.003853,0.05907],[0.004186,0.02931],[0.004549,0.008068],[0.004939,0.000244],[0.005375,0.02708],[0.005836,0.06915],[0.006349,0.02202],[0.007314,0.01841],[0.008126,0.03577],[0.008834,0.01831],[0.009648,0.001289],[0.010431,0.01726],[0.011323,0.0325],[0.01232,0.01405],[0.013416,0.00825],[0.01459,0.01235],[0.016445,0.01425],[0.017332,0.02712],[0.019985,0.01225],[0.021739,0.0323],[0.023622,0.01618],[0.025765,0.0123],[0.028133,0.002548],[0.030191,0.02616],[0.032547,0.02522],[0.035767,0.01361],[0.040575,0.01165],[0.044755,0.02535],[0.048304,0.0134],[0.053271,0.007289],[0.057001,0.01187],[0.061735,0.02223],[0.066882,0.009344],[0.072883,0.007178],[0.078354,0.01119],[0.088207,0.01272],[0.092837,0.009064],[0.103871,0.01129],[0.112686,0.0153],[0.122854,0.01046],[0.132523,0.007097],[0.143595,0.002842],[0.152146,0.013],[0.164498,0.004001],[0.17762,0.01011],[0.193472,0.005976],[0.210982,0.01031],[0.227263,0.004527],[0.240098,0.006597],[0.261704,0.001978],[0.276479,0.007133],[0.295873,0.002968],[0.315126,0.007481],[0.331007,0.003614],[0.352085,0.003681],[0.371085,0.008639],[0.395945,0.006018],[0.413323,0.002714],[0.447621,0.004296],[0.469302,0.003181],[0.493446,0.003578],[0.511198,0.002289],[0.534503,0.001795],[0.554777,0.006049],[0.577039,0.003429],[0.595373,0.002924],[0.628648,0.0022],[0.641708,0.003976],[0.671158,0.001915],[0.686889,0.001856],[0.707567,0.001867],[0.724989,0.005412],[0.742459,0.001261],[0.759908,0.002734],[0.774838,0.0006291],[0.789019,0.003868],[0.802502,0.0008871],[0.82163,0.001609],[0.833958,0.002007],[0.84847,0.001951],[0.856104,0.000502],[0.870777,0.002539],[0.880465,0.0008166],[0.889242,0.001587],[0.896097,0.001028],[0.906367,0.0006984],[0.911379,0.001873],[0.920625,0.000781],[0.924733,0.001254],[0.932813,0.001193],[0.937117,0.001396],[0.944342,0.0002167],[0.948361,0.001398],[0.952835,0.0001226],[0.956363,0.001444],[0.959652,7.308e-05],[0.963103,0.0009926],[0.967119,0.001514],[0.969099,0.0004073],[0.971516,0.0001671],[0.974716,0.0007892],[0.975759,0.0007676],[0.978641,0.0005249],[0.980696,2.987e-05],[0.982097,0.0004264],[0.983541,0.000671],[0.984865,5.783e-05],[0.986074,0.0004041],[0.987754,0.0002497],[0.988323,0.0005706],[0.989923,0.0003813],[0.990736,0.0001824],[0.991503,1.906e-05],[0.992106,0.0003088],[0.993039,1.271e-05],[0.993391,0.0005535],[0.994209,0.0005147],[0.994387,4.45e-06],[0.994834,1.906e-05],[0.995623,0.0003241],[0.995958,5.72e-06],[0.996237,1.906e-05],[0.996892,0.001605],[0.997219,1.27e-06],[0.997259,3.81e-06],[0.997548,9.85e-05],[0.997928,9.532e-05],[0.998222,0.0001525],[0.998347,2.224e-05],[0.998846,5.719e-05],[0.999001,3.18e-06],[0.999455,0.001106],[0.999591,1.398e-05]]},"Traumatic brain injury":{"n":18968,"d":[[0.000234,5.27e-06],[0.000429,1.76e-06],[0.0005,5.272e-05],[0.000581,1.76e-06],[0.000683,1.582e-05],[0.000795,1.76e-06],[0.000916,4.218e-05],[0.001066,3.866e-05],[0.001251,7.03e-06],[0.001456,1.76e-06],[0.001678,4.218e-05],[0.001957,0.0001441],[0.002155,1.933e-05],[0.002303,7.03e-06],[0.002655,0.0001915],[0.002949,0.002028],[0.003246,0.0005764],[0.00356,0.0004288],[0.003856,0.007205],[0.004186,0.005653],[0.004557,0.001541],[0.004929,9.138e-05],[0.005381,0.006388],[0.005837,0.0182],[0.006373,0.01059],[0.007286,0.008084],[0.008133,0.01591],[0.008845,0.008973],[0.009492,0.002153],[0.010397,0.01156],[0.011327,0.02083],[0.012357,0.0125],[0.013425,0.00846],[0.014678,0.007224],[0.015939,0.004806],[0.017308,0.02316],[0.019794,0.008089],[0.021816,0.02174],[0.023729,0.01557],[0.025847,0.01655],[0.028153,0.004223],[0.030302,0.02082],[0.032684,0.01606],[0.035866,0.01592],[0.04052,0.009172],[0.044663,0.0253],[0.048289,0.01954],[0.053305,0.0101],[0.0572,0.01154],[0.061976,0.02645],[0.067096,0.01281],[0.073223,0.01341],[0.079087,0.009245],[0.088121,0.0174],[0.092852,0.01915],[0.103045,0.01511],[0.112462,0.02515],[0.122953,0.02321],[0.132577,0.01176],[0.143776,0.007363],[0.152381,0.01875],[0.164738,0.00805],[0.177478,0.02322],[0.193106,0.01144],[0.210836,0.02175],[0.228106,0.01041],[0.238636,0.01264],[0.261739,0.004421],[0.276637,0.01468],[0.296447,0.007446],[0.315433,0.01911],[0.332255,0.006427],[0.351605,0.01026],[0.371376,0.02085],[0.395319,0.01466],[0.413964,0.006987],[0.447758,0.01076],[0.469489,0.00746],[0.493342,0.009458],[0.512084,0.004313],[0.532719,0.006253],[0.554778,0.01558],[0.577349,0.01024],[0.596307,0.006298],[0.629841,0.005546],[0.641173,0.01005],[0.671077,0.005218],[0.686392,0.004406],[0.70812,0.004866],[0.725006,0.01391],[0.74227,0.003465],[0.759924,0.00713],[0.775093,0.003016],[0.788944,0.01048],[0.802295,0.00242],[0.821299,0.004624],[0.83399,0.005116],[0.848558,0.005251],[0.856425,0.001578],[0.870684,0.006522],[0.8797,0.002418],[0.887758,0.003168],[0.896136,0.002778],[0.906365,0.001917],[0.91132,0.004819],[0.920242,0.002434],[0.924736,0.002951],[0.932944,0.003235],[0.937044,0.003796],[0.944393,0.0006326],[0.948322,0.003487],[0.952593,0.001374],[0.956337,0.003791],[0.959175,0.0003813],[0.963041,0.002587],[0.966981,0.004407],[0.969108,0.0009156],[0.971666,0.0006221],[0.974604,0.002183],[0.975738,0.002003],[0.978646,0.001399],[0.980696,8.26e-05],[0.982073,0.001061],[0.98368,0.001905],[0.984878,0.0001582],[0.986127,0.001014],[0.987752,0.0006942],[0.988433,0.00174],[0.989929,0.001002],[0.990762,0.000427],[0.991331,0.0001582],[0.992075,0.0009068],[0.993039,3.515e-05],[0.993388,0.001309],[0.99421,0.001383],[0.994542,7.205e-05],[0.994834,5.272e-05],[0.995623,0.0008014],[0.995903,7.03e-06],[0.996153,0.0001054],[0.996892,0.003754],[0.997219,3.51e-06],[0.997259,1.76e-06],[0.997546,0.0002197],[0.997752,1.76e-06],[0.99805,0.000956],[0.998222,0.0004218],[0.998347,2.109e-05],[0.998734,5.272e-05],[0.998846,0.0001582],[0.999001,8.79e-06],[0.999321,1.757e-05],[0.999388,5.272e-05],[0.999455,0.002372],[0.999591,3.69e-05],[0.9999,7.03e-06]]}};
+const GH_X=[-9.706235997, -8.680837723, -7.825051744, -7.055396867, -6.339997687, -5.66238185, -5.012600596, -4.384020366, -3.771894423, -3.172634639, -2.5834021, -2.001858613, -1.426005658, -0.8540733517, -0.2844387607, 0.2844387607, 0.8540733517, 1.426005658, 2.001858613, 2.5834021, 3.172634639, 3.771894423, 4.384020366, 5.012600596, 5.66238185, 6.339997687, 7.055396867, 7.825051744, 8.680837723, 9.706235997],GH_W=[1.640807008e-21, 1.585560945e-17, 1.62408013e-14, 4.573425871e-12, 5.178459467e-10, 2.882175154e-08, 8.909088869e-07, 1.657998163e-05, 0.000196512944, 0.00154470734, 0.008295747558, 0.03111177018, 0.08278683672, 0.1580469532, 0.2179999718, 0.2179999718, 0.1580469532, 0.08278683672, 0.03111177018, 0.008295747558, 0.00154470734, 0.000196512944, 1.657998163e-05, 8.909088869e-07, 2.882175154e-08, 5.178459467e-10, 4.573425871e-12, 1.62408013e-14, 1.585560945e-17, 1.640807008e-21];
+const SIGMA=1.433; // SD of the residual on the logit scale giving TRISS an AUC of 0.90 for simulated deaths
+Object.keys(TB).forEach(k=>{const o=document.createElement("option");o.value=k;o.textContent=`${k} (n = ${TB[k].n.toLocaleString("en-US")})`;$("tbpop").appendChild(o);});
+
+function setMode(m){
+  mode=m;
+  ["summary","indiv","tb"].forEach(k=>{$("tab-"+k).setAttribute("aria-selected",m===k);const pn=$("pane-"+k);pn.hidden=m!==k;pn.style.display=m===k?"flex":"none";});
+  const opts=$("scale").options;
+  opts[1].disabled=opts[2].disabled=(m==="summary");
+  if(m==="summary" && $("scale").value!=="or"){$("scale").value="or";syncScale();}
+  update();
+}
+$("tab-summary").addEventListener("click",()=>setMode("summary"));
+$("tab-indiv").addEventListener("click",()=>setMode("indiv"));
+$("tab-tb").addEventListener("click",()=>setMode("tb"));
+
+function syncScale(){
+  const s=$("scale").value, e=$("effect");
+  if(s==="or"){$("effectlabel").textContent="Expected odds ratio in each patient (below 1 = reduced risk)";e.step="0.01";if(+e.value<=0||+e.value>=5||e.dataset.s!=="or")e.value="0.70";}
+  if(s==="rr"){$("effectlabel").textContent="Expected relative risk in each patient (below 1 = reduced risk)";e.step="0.01";if(e.dataset.s!=="rr")e.value="0.70";}
+  if(s==="ard"){$("effectlabel").textContent="Expected absolute risk reduction in each patient, percentage points";e.step="0.1";if(e.dataset.s!=="ard")e.value="3.0";}
+  e.dataset.s=s;
+}
+$("effect").dataset.s="or";
+$("scale").addEventListener("change",()=>{syncScale();update();});
+
+// ---------- parsing ----------
+function parseRisks(text){
+  const vals=[]; let skipped=0;
+  for(const raw of text.split(/\r?\n/)){
+    const line=raw.trim(); if(!line) continue;
+    let field;
+    if(/[;\t]/.test(line)) field=line.split(/[;\t]/)[0];
+    else if(/^\s*-?\d+,\d+\s*$/.test(line)) field=line;           // decimal comma
+    else field=line.split(/[,\s]+/)[0];
+    const v=parseFloat(field.trim().replace(/^"|"$/g,"").replace(",","."));
+    if(Number.isFinite(v)) vals.push(v); else skipped++;
+  }
+  if(!vals.length) return {vals:[],skipped,pct:false,out:0};
+  const pct=Math.max(...vals)>1;
+  const conv=pct?vals.map(v=>v/100):vals;
+  const ok=conv.filter(v=>v>=0&&v<=1);
+  return {vals:ok,skipped,pct,out:conv.length-ok.length};
+}
+function readTextarea(){
+  const r=parseRisks($("risks").value), info=$("parseinfo");
+  if(!$("risks").value.trim()){indivRisks=null;info.hidden=true;return;}
+  indivRisks=r.vals.length?r.vals:null;
+  const parts=[`${r.vals.length.toLocaleString("en-US")} patients read`];
+  if(r.pct) parts.push("values read as percentages");
+  if(r.skipped) parts.push(`${r.skipped} non-numeric line${r.skipped>1?"s":""} ignored (header?)`);
+  if(r.out) parts.push(`${r.out} value${r.out>1?"s":""} outside 0–100% ignored`);
+  info.textContent=parts.join(" · ")+".";info.hidden=false;
+}
+let tmr;
+$("risks").addEventListener("input",()=>{clearTimeout(tmr);tmr=setTimeout(()=>{readTextarea();update();},250);});
+$("file").addEventListener("change",ev=>{
+  const f=ev.target.files[0]; if(!f) return;
+  const fr=new FileReader();
+  fr.onload=()=>{$("risks").value=fr.result;readTextarea();update();};
+  fr.readAsText(f); ev.target.value="";
+});
+$("clear").addEventListener("click",()=>{$("risks").value="";readTextarea();update();});
+
+// ---------- compute ----------
+let tbDist=null;
+const ex=t=>1/(1+Math.exp(-t));
+// Group individual risks into 200 bands on the logit scale (mean risk and share of patients per band)
+function binRisks(r){
+  const nb=200,a=Math.log(1e-4/(1-1e-4)),b=-a,s=new Array(nb).fill(0),c=new Array(nb).fill(0);
+  for(const p0 of r){const p=Math.min(Math.max(p0,1e-4),1-1e-4);const k=Math.min(nb-1,Math.floor((Math.log(p/(1-p))-a)/(b-a)*nb));s[k]+=p;c[k]++;}
+  const P=[],W=[];for(let k=0;k<nb;k++)if(c[k]){P.push(s[k]/c[k]);W.push(c[k]/r.length);}
+  return {P,W};
+}
+// Distribution engine: true risk around each predicted risk (logit-normal residual, SD sigma), mean true risk kept equal to mean predicted risk
+function engine(P,W,sigma,scale,e){
+  const p0=P.reduce((a,p,i)=>a+p*W[i],0), v=P.reduce((a,p,i)=>a+W[i]*(p-p0)*(p-p0),0);
+  const L=P.map(p=>Math.log(p/(1-p)));
+  let d=0;
+  if(sigma>0){
+    const meanStar=d=>{let s=0;for(let i=0;i<L.length;i++){let m=0;for(let j=0;j<GH_X.length;j++)m+=GH_W[j]*ex(L[i]+d+sigma*GH_X[j]);s+=W[i]*m;}return s;};
+    let a=-6,b=6;for(let it=0;it<50;it++){const c=(a+b)/2;if(meanStar(c)>p0)b=c;else a=c;} d=(a+b)/2;
+  }
+  const m0=[],m1=[];
+  for(let i=0;i<L.length;i++){
+    if(sigma>0){let x0=0,x1=0;for(let j=0;j<GH_X.length;j++){const q=ex(L[i]+d+sigma*GH_X[j]);x0+=GH_W[j]*q;x1+=GH_W[j]*applyEffect(q,scale,e);}m0.push(x0);m1.push(x1);}
+    else{m0.push(P[i]);m1.push(applyEffect(P[i],scale,e));}
+  }
+  const p1A=m1.reduce((a,m,i)=>a+W[i]*m,0);
+  return {p0,R2:v/(p0*(1-p0)),p1A,L,W,m0,m1};
+}
+// Adjusted analysis: logistic regression on treatment and the logit of the predicted risk, fitted in the trial.
+// Large-sample (sandwich) variance of the treatment coefficient, computed on the distribution instead of by simulation.
+function adjusted(g,alpha,power){
+  const rows=[];for(let i=0;i<g.L.length;i++){rows.push([g.L[i],0,g.W[i]/2,g.m0[i]]);rows.push([g.L[i],1,g.W[i]/2,g.m1[i]]);}
+  let b=[0,0,0];
+  const inv3=A=>{const[a,b1,c]=A[0],[d,e1,f]=A[1],[gg,h,i]=A[2];const det=a*(e1*i-f*h)-b1*(d*i-f*gg)+c*(d*h-e1*gg);
+    return [[(e1*i-f*h)/det,(c*h-b1*i)/det,(b1*f-c*e1)/det],[(f*gg-d*i)/det,(a*i-c*gg)/det,(c*d-a*f)/det],[(d*h-e1*gg)/det,(b1*gg-a*h)/det,(a*e1-b1*d)/det]];};
+  let A,B;
+  for(let it=0;it<40;it++){
+    const gr=[0,0,0];A=[[0,0,0],[0,0,0],[0,0,0]];B=[[0,0,0],[0,0,0],[0,0,0]];
+    for(const[z,t,w,m]of rows){const x=[1,t,z],pi=ex(b[0]+b[1]*t+b[2]*z),h=w*pi*(1-pi),r=w*(m*(1-m)+(m-pi)*(m-pi));
+      for(let k=0;k<3;k++){gr[k]+=w*(m-pi)*x[k];for(let l=0;l<3;l++){A[k][l]+=h*x[k]*x[l];B[k][l]+=r*x[k]*x[l];}}}
+    const Ai=inv3(A),st=[0,1,2].map(k=>Ai[k][0]*gr[0]+Ai[k][1]*gr[1]+Ai[k][2]*gr[2]);
+    b=b.map((v,k)=>v+st[k]); if(Math.max(...st.map(Math.abs))<1e-10)break;
+  }
+  const Ai=inv3(A);let V=0;for(let k=0;k<3;k++)for(let l=0;l<3;l++)V+=Ai[1][k]*B[k][l]*Ai[l][1];
+  const z=qnorm(1-alpha/2)+qnorm(power);
+  return {n:z*z*V/(b[1]*b[1])/2, orCond:Math.exp(b[1])};
+}
+function compute(eOver,quiet){
+  const alpha=+$("alpha").value, power=+$("power").value, scale=$("scale").value;
+  let e=eOver!==undefined?eOver:+$("effect").value;
+  if(!Number.isFinite(e)) return {err:"Enter the expected treatment effect."};
+  if(scale==="or"||scale==="rr"){ if(!(e>0)||e===1) return {err:"The ratio must be above 0 and different from 1."}; }
+  if(scale==="ard"){ if(!(e>0&&e<100)) return {err:"The absolute reduction must be between 0 and 100 percentage points."}; e=e/100; }
+  let p0,p1F,p1A,R2,n,src,adj=null;
+  if(mode==="summary"){
+    const m=+$("mean").value/100, sd=+$("sd").value/100;
+    if(!(m>0&&m<1)) return {err:"Mean risk must be between 0% and 100%."};
+    if(!(sd>=0)) return {err:"The SD of risk cannot be negative."};
+    const vmax=m*(1-m);
+    if(sd*sd>=vmax) return {err:`Risks lie between 0% and 100%, so with an average of ${(m*100).toFixed(1)}% their SD cannot exceed ${(Math.sqrt(vmax)*100).toFixed(1)}%. That maximum would mean every patient has a risk of exactly 0% or 100%. Check that the SD is that of the patients' risks, in percent.`};
+    R2=sd*sd/vmax; p0=m; p1F=applyEffect(m,"or",e);
+    p1A=p0-(1-R2)*(p0-p1F); // first-order approximation
+    src="approx";
+  } else {
+    let P,W,sigma;
+    if(mode==="tb"){
+      const lo=0, hi=1;
+      const kept=TB[$("tbpop").value].d.filter(([p])=>p>=lo&&p<=hi), wt=kept.reduce((a,[,w])=>a+w,0);
+      P=kept.map(([p])=>Math.min(Math.max(p,1e-6),1-1e-6)); W=kept.map(([,w])=>w/wt);
+      sigma=SIGMA; // main analysis of the article: TRISS AUC 0.90
+      n=wt>0.9995?TB[$("tbpop").value].n:Math.round(TB[$("tbpop").value].n*wt);
+    } else {
+      if(!indivRisks||indivRisks.length<2) return {err:"Paste or load at least two individual risks, or switch back to Mean and SD."};
+      ({P,W}=binRisks(indivRisks)); n=indivRisks.length; sigma=0; // risks used as given
+    }
+    const g=engine(P,W,sigma,scale,e);
+    p0=g.p0; R2=g.R2; p1A=g.p1A; p1F=applyEffect(p0,scale,e); if(!quiet) tbDist={P,W}; src="exact";
+    adj=adjusted(g,alpha,power);
+  }
+  const nF=nPerArm(p0,p1F,alpha,power);
+  // Mean and SD: the paper's rule, n × 1/(1 − R²)². Distributions: exact calculation.
+  const nA=src==="approx"?nF/Math.pow(1-R2,2):nPerArm(p0,p1A,alpha,power);
+  if(!Number.isFinite(nF)||!Number.isFinite(nA)) return {err:"The effect produces no difference between arms; check the inputs."};
+  const z=qnorm(1-alpha/2), pw=x=>pnorm(Math.sqrt(nF/x)*(z+qnorm(power))-z); // power of a usual-sized trial, from the ratio of sample sizes
+  const out={alpha,power,scale,e,p0,p1F,p1A,R2,n,src,NF:Math.ceil(nF),NA:Math.ceil(nA),factor:nA/nF,
+    pow:pw(nA), orTrial:odds(p1A)/odds(p0), orForm:odds(p1F)/odds(p0)};
+  if(adj&&Number.isFinite(adj.n)&&adj.n>0){out.NJ=Math.ceil(adj.n);out.factorJ=adj.n/nF;out.powJ=pw(adj.n);out.orCond=adj.orCond;}
+  return out;
+}
+
+// ---------- render ----------
+const fmtN=x=>Math.round(x).toLocaleString("en-US");
+const pc=(x,d=1)=>(x*100).toFixed(d)+"%";
+const round2=x=>{const k=Math.pow(10,Math.max(0,Math.floor(Math.log10(x))-1));return Math.round(x/k)*k;}; // two significant digits
+function render(r){
+  const err=$("error");
+  const dim=v=>{["results","headline","chart","legend"].forEach(id=>$(id).style.opacity=v);};
+  if(r.err){err.textContent=r.err;err.hidden=false;dim(.35);return;}
+  err.hidden=true;dim(1);
+  const hasJ=r.NJ!==undefined;
+  $("nF").textContent=fmtN(r.NF);
+  $("nA").textContent=Math.abs(r.factor-1)<0.005?fmtN(r.NF):"≈ "+fmtN(round2(r.NA));
+  $("facA").textContent=`×${r.factor.toFixed(1)} the usual calculation`+(r.src==="approx"?", approximation":"");
+  $("nJ").textContent=hasJ?"≈ "+fmtN(round2(r.NJ)):"–";
+  $("facJ").textContent=hasJ?`×${r.factorJ.toFixed(1)} the usual calculation`:"needs individual risks or the Traumabase data";
+  const exact=Math.abs(r.factor-1)<0.005;
+  $("headline").textContent=exact
+    ? "On this scale the usual calculation is exact for the unadjusted analysis."
+    : `A trial sized the usual way would have about ${Math.round(r.pow*100)}% power instead of ${Math.round(r.power*100)}%.`;
+  drawChart(r);
+}
+
+// chart: patients per arm according to the expected effect (log scale), as in Fig. 1D of the article
+function effectGrid(scale){
+  if(scale==="ard") return [1,1.5,2,2.5,3,4,5,6,8,10];
+  if(+$("effect").value>1) return [1.1,1.2,1.3,1.4,1.5,1.6,1.8,2];
+  return [0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9];
+}
+function drawChart(r){
+  const grid=effectGrid(r.scale), cur=r.scale==="ard"?r.e*100:r.e;
+  const pts=grid.map(v=>{const q=compute(v,true);return q.err?null:{v,F:q.NF,A:q.NA,J:q.NJ};}).filter(Boolean);
+  if(!pts.length){$("chart").innerHTML="";$("legend").innerHTML="";return;}
+  const W=640,H=270,L=58,R=16,T=14,B=40;
+  const vals=pts.flatMap(p=>[p.F,p.A,p.J].filter(x=>x>0)).concat([r.NF,r.NA]);
+  let ylo=Math.pow(10,Math.floor(Math.log10(Math.min(...vals)))), yhi=Math.pow(10,Math.ceil(Math.log10(Math.max(...vals))));
+  const xmin=Math.min(grid[0],cur), xmax=Math.max(grid[grid.length-1],cur);
+  const X=v=>L+(v-xmin)/(xmax-xmin)*(W-L-R), Y=n=>T+(1-(Math.log10(n)-Math.log10(ylo))/(Math.log10(yhi)-Math.log10(ylo)))*(H-T-B);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Patients per arm according to the expected treatment effect">`;
+  for(let d=Math.log10(ylo);d<=Math.log10(yhi)+1e-9;d++){
+    [1,2,5].forEach(k=>{const n=k*Math.pow(10,d);if(n<ylo||n>yhi)return;const y=Y(n);
+      s+=`<line x1="${L}" x2="${W-R}" y1="${y}" y2="${y}" stroke="var(--soft)"/><text x="${L-6}" y="${y+4}" text-anchor="end">${n.toLocaleString("en-US")}</text>`;});
+  }
+  grid.forEach(v=>{const x=X(v);s+=`<line x1="${x}" x2="${x}" y1="${H-B}" y2="${H-B+4}" class="axis"/><text x="${x}" y="${H-B+16}" text-anchor="middle">${r.scale==="ard"?v:v.toFixed(2)}</text>`;});
+  s+=`<line x1="${L}" x2="${W-R}" y1="${H-B}" y2="${H-B}" class="axis"/>`;
+  const xl={or:"Expected odds ratio in each patient",rr:"Expected relative risk in each patient",ard:"Expected absolute risk reduction in each patient, percentage points"}[r.scale];
+  s+=`<text x="${(L+W-R)/2}" y="${H-4}" text-anchor="middle">${xl}</text>`;
+  s+=`<text x="13" y="${(T+H-B)/2}" transform="rotate(-90 13 ${(T+H-B)/2})" text-anchor="middle">Patients per arm (log scale)</text>`;
+  const xc=X(cur);
+  s+=`<line x1="${xc}" x2="${xc}" y1="${T}" y2="${H-B}" stroke="var(--muted)" stroke-dasharray="3 3"/>`;
+  const line=(k,col,dash)=>{const q=pts.filter(p=>p[k]>0);if(!q.length)return;
+    s+=`<path d="${q.map((p,i)=>(i?"L":"M")+X(p.v).toFixed(1)+","+Y(p[k]).toFixed(1)).join("")}" fill="none" stroke="${col}" stroke-width="2.2"${dash?` stroke-dasharray="${dash}"`:""}/>`;
+    q.forEach(p=>{s+=`<circle cx="${X(p.v).toFixed(1)}" cy="${Y(p[k]).toFixed(1)}" r="3" fill="${col}"/>`;});};
+  line("F","var(--formula)");line("A","var(--required)");line("J","var(--adjusted)");
+  // current values
+  [[r.NF,"var(--formula)"],[r.NA,"var(--required)"],[r.NJ,"var(--adjusted)"]].forEach(([n,c])=>{if(n>0)s+=`<circle cx="${xc}" cy="${Y(n)}" r="5.5" fill="${c}" stroke="var(--panel)" stroke-width="2"/>`;});
+  s+=`</svg>`;
+  $("chart").innerHTML=s;
+  $("legend").innerHTML=`<span><i class="sw" style="background:var(--formula)"></i>Usual calculation</span>
+    <span><i class="sw" style="background:var(--required)"></i>Required, unadjusted analysis</span>`+
+    (r.NJ>0?`<span><i class="sw" style="background:var(--adjusted)"></i>Required, adjusted analysis</span>`:"")+
+    `<span><i class="sw" style="background:var(--muted);height:1px"></i>Your expected effect</span>`;
+}
+
+function hint(){
+  const sc=$("scale").value, e=+$("effect").value, h=$("effecthint");
+  const f=x=>{const v=Math.round(x*1000)/10;return (Number.isInteger(v)?v.toFixed(0):v.toFixed(1))+"%";};
+  if(!(e>0)||(sc!=="ard"&&e===1)){h.textContent="";return;}
+  if(sc==="ard"){
+    if(e>=100){h.textContent="";return;}
+    const d=e/100;
+    h.textContent=`The risk falls by ${+e.toFixed(2)} percentage points in every patient: 10% becomes ${f(Math.max(0,0.1-d))}, 50% becomes ${f(Math.max(0,0.5-d))}; a risk below ${+e.toFixed(2)}% falls to 0.`;
+    return;
+  }
+  const what=sc==="or"?"odds of the outcome":"risk", dir=e<1?"fall":"rise", pct=Math.round(Math.abs(1-e)*1000)/10;
+  h.textContent=`The ${what} ${dir}${sc==="or"?"":"s"} by ${pct}% in every patient: a risk of 10% becomes ${f(applyEffect(0.1,sc,e))}, a risk of 50% becomes ${f(applyEffect(0.5,sc,e))}.`;
+}
+function update(){hint();render(compute());}
+["alpha","power","mean","sd","effect"].forEach(id=>$(id).addEventListener("input",update));
+["tbpop"].forEach(id=>$(id).addEventListener("change",update));
+$("form").addEventListener("submit",e=>e.preventDefault());
+syncScale(); setMode("summary");
+})();
+</script>
+</body>
+</html>
