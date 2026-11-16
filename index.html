@@ -158,7 +158,7 @@ code{font-family:var(--font-num);font-size:.85em}
 
         <div id="pane-indiv" role="tabpanel" aria-labelledby="tab-indiv" hidden style="flex-direction:column;gap:12px">
           <label for="risks">Predicted risk of each patient
-            <small>One predicted risk per line (0.12 or 12), from a population similar to your trial's, or load a CSV.</small>
+            <small>One predicted risk per line (0.12 or 12), from a population similar to your trial's, or load a CSV (the column named risk, prob or pred is used, otherwise the last column).</small>
             <textarea id="risks" spellcheck="false" placeholder="0.004&#10;0.031&#10;0.92&#10;…"></textarea>
           </label>
           <div class="btnrow">
@@ -239,7 +239,7 @@ code{font-family:var(--font-num);font-size:.85em}
         </dl>
   </details>
   <footer>
-    Reference: James A, et al. Applying the treatment effect to mean mortality underestimates the sample size of mortality trials: a multicenter trauma registry-based simulation study (manuscript in preparation). This tool supports trial planning and does not replace a statistician's review.
+    Reference: James A, et al. Applying the treatment effect to mean mortality may underestimate the sample size of critical care mortality trials: a simulation study in a national trauma registry (submitted). Code and data: <a href="https://doi.org/10.5281/zenodo.24061274">doi.org/10.5281/zenodo.24061274</a>. This tool supports trial planning and does not replace a statistician's review.
   </footer>
 </div>
 
@@ -308,27 +308,36 @@ $("scale").addEventListener("change",()=>{syncScale();update();});
 
 // ---------- parsing ----------
 function parseRisks(text){
-  const vals=[]; let skipped=0;
-  for(const raw of text.split(/\r?\n/)){
-    const line=raw.trim(); if(!line) continue;
-    let field;
-    if(/[;\t]/.test(line)) field=line.split(/[;\t]/)[0];
-    else if(/^\s*-?\d+,\d+\s*$/.test(line)) field=line;           // decimal comma
-    else field=line.split(/[,\s]+/)[0];
-    const v=parseFloat(field.trim().replace(/^"|"$/g,"").replace(",","."));
-    if(Number.isFinite(v)) vals.push(v); else skipped++;
+  // Reads one risk per line. With several columns (CSV), uses the column whose header
+  // looks like a risk (risk, prob, pred, p), otherwise the last column.
+  const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  if(!lines.length) return {vals:[],skipped:0,pct:false,out:0,col:null};
+  const first=lines[0];
+  const sep=/;/.test(first)?";":/\t/.test(first)?"\t":(/,/.test(first)&&!/^\s*-?\d+,\d+\s*$/.test(first))?",":null;
+  const cells=l=>(sep?l.split(sep):[l]).map(c=>c.trim().replace(/^"|"$/g,""));
+  const num=c=>{const v=parseFloat(c.replace(",","."));return /^-?\d*[.,]?\d+(e-?\d+)?%?$/i.test(c)?v:NaN;};
+  let col=0, start=0, colName=null;
+  if(sep){
+    const h=cells(first), headerRow=h.some(c=>c!==""&&!Number.isFinite(num(c)));
+    if(headerRow){start=1;const k=h.findIndex(c=>/risk|prob|pred|^p$/i.test(c));col=k>=0?k:h.length-1;colName=h[col]||null;}
+    else col=h.length-1;
   }
-  if(!vals.length) return {vals:[],skipped,pct:false,out:0};
-  const pct=Math.max(...vals)>1;
+  const vals=[]; let skipped=0;
+  for(let i=start;i<lines.length;i++){const c=cells(lines[i]), v=num(c[Math.min(col,c.length-1)]||"");
+    if(Number.isFinite(v)) vals.push(v); else skipped++;}
+  if(!vals.length) return {vals:[],skipped,pct:false,out:0,col:colName};
+  // Percent only if most values exceed 1 (median > 1); otherwise values above 1 are rejected, not rescaled
+  const sorted=[...vals].sort((a,b)=>a-b), pct=sorted[Math.floor(sorted.length/2)]>1;
   const conv=pct?vals.map(v=>v/100):vals;
   const ok=conv.filter(v=>v>=0&&v<=1);
-  return {vals:ok,skipped,pct,out:conv.length-ok.length};
+  return {vals:ok,skipped,pct,out:conv.length-ok.length,col:sep?(colName||`column ${col+1}`):null};
 }
 function readTextarea(){
   const r=parseRisks($("risks").value), info=$("parseinfo");
   if(!$("risks").value.trim()){indivRisks=null;info.hidden=true;return;}
   indivRisks=r.vals.length?r.vals:null;
   const parts=[`${r.vals.length.toLocaleString("en-US")} patients read`];
+  if(r.col) parts.push(`column read: ${r.col}`);
   if(r.pct) parts.push("values read as percentages");
   if(r.skipped) parts.push(`${r.skipped} non-numeric line${r.skipped>1?"s":""} ignored (header?)`);
   if(r.out) parts.push(`${r.out} value${r.out>1?"s":""} outside 0–100% ignored`);

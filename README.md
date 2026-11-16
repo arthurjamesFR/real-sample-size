@@ -11,7 +11,7 @@ Sample sizes are usually calculated by applying the expected treatment effect to
 | File | Description |
 | --- | --- |
 | `index.html` | Online calculator. A single self-contained page; it contains only an aggregated distribution of predicted risk (share of patients in 200 risk bands), no individual data. Risks entered by users are processed in their browser and are not transmitted. |
-| `R/analyse.R` | Complete analysis code of the article (data preparation, multiple imputation, simulations, tables and figures). |
+| `R/NSN_analyse_shared.R` | Complete analysis code of the article (data preparation, multiple imputation, simulations, tables and figures). |
 
 ## Calculator
 
@@ -21,7 +21,7 @@ The calculator gives three sample sizes per arm for a two-arm superiority trial 
 - the sample size actually required for an unadjusted analysis, with the effect applied to each patient's risk;
 - the sample size required for an analysis adjusted for the logit of predicted risk.
 
-The risk distribution can be entered as its mean and SD, as individual predicted risks, or taken from the Traumabase. The method is described on the page and in the supplementary material of the article (ESM Text S4).
+The risk distribution can be entered as its mean and SD, as individual predicted risks (one per line, or a CSV: the column named risk, prob or pred is used, otherwise the last column), or taken from the Traumabase. The method is described on the page and in the supplementary material of the article (ESM Text S4).
 
 ## Analysis code
 
@@ -33,13 +33,15 @@ To run the code on an authorized extract:
 
 1. set `DATA_PATH` to the extract and `OUTPUT_DIR` / `LOCAL_DIR` to the output folders (STEP 0);
 2. set `MODE <- "TEST"` for a quick run, or `"FINAL"` for the full analysis (several hours);
-3. run `source("R/analyse.R")`.
+3. run `source("R/NSN_analyse_shared.R")`.
 
 Only aggregated outputs are written to `OUTPUT_DIR`. The key linking center codes to centers is written to `LOCAL_DIR` and must not be shared.
 
 ## Citation
 
-James A, et al. Applying the treatment effect to mean mortality underestimates the sample size of mortality trials: a multicenter trauma registry-based simulation study. Manuscript in preparation.
+James A, et al. Applying the treatment effect to mean mortality may underestimate the sample size of critical care mortality trials: a simulation study in a national trauma registry. Submitted.
+
+Code and aggregated data: https://doi.org/10.5281/zenodo.24061274
 
 ## License
 
