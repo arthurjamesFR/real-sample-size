@@ -1261,20 +1261,28 @@ pal <- c("Overall" = "#1c4e80", "Hemorrhagic shock"   = "#a30000",
          "Traumatic brain injury" = "#7030a0")
 grp_levels <- names(pools)
 
+# Display labels: "Whole population" in all figures, as in the text and tables.
+# Internal keys remain "Overall".
+pop_lab <- function(x) ifelse(x == "Overall", "Whole population", x)
+grp_lab <- pop_lab(grp_levels)
+pal_lab <- setNames(pal, pop_lab(names(pal)))
+LAB_FACTEUR <- "Sample-size inflation factor"
+POURCENT <- function(x) paste0(100 * x, "%")
+
 ECHELLE_RISQUE <- scale_x_log10(
   limits = c(1e-4, 1), breaks = c(1e-4, 1e-3, 1e-2, 0.1, 1),
   labels = c("0.01%", "0.1%", "1%", "10%", "100%"))
 
 # ---- FIGURE 1: distribution of predicted risk --------------------------------
   stats_A <- data.frame(
-    grp    = factor(grp_levels, levels = grp_levels),
+    grp    = factor(grp_levels, levels = grp_levels, labels = grp_lab),
     moy    = sapply(pools[grp_levels], mean),
     med    = sapply(pools[grp_levels], median))
 
 set.seed(SEED)
 fig1 <- do.call(rbind, lapply(grp_levels, function(nm)
   data.frame(risk = clamp(echant(pools[[nm]])), grp = nm))) %>%
-  mutate(grp = factor(grp, levels = grp_levels)) %>%
+  mutate(grp = factor(grp, levels = grp_levels, labels = grp_lab)) %>%
   ggplot(aes(risk, fill = grp, color = grp)) +
   geom_density(alpha = .18, linewidth = .6) +
   geom_vline(data = stats_A, aes(xintercept = moy, color = grp),
@@ -1282,7 +1290,7 @@ fig1 <- do.call(rbind, lapply(grp_levels, function(nm)
   geom_vline(data = stats_A, aes(xintercept = med, color = grp),
              linetype = "dotted", linewidth = .6) +
   facet_wrap(~ grp, ncol = 1, scales = "free_y") +
-  scale_fill_manual(values = pal) + scale_color_manual(values = pal) +
+  scale_fill_manual(values = pal_lab) + scale_color_manual(values = pal_lab) +
   scale_x_continuous(trans = scales::logit_trans(),
                      breaks = c(1e-3, 1e-2, 0.1, 0.5, 0.9, 0.99),
                      labels = c("0.1%", "1%", "10%", "50%", "90%", "99%")) +
@@ -1294,14 +1302,14 @@ print(fig1)
 # ---- FIGURE 2: absolute risk reduction according to baseline risk ------------
 courbe <- data.frame(p = seq(0.001, 0.999, length.out = 600)) %>%
   mutate(arr = p - apply_OR(p, OR_REF))
-points_grp <- data.frame(grp = factor(grp_levels, levels = grp_levels),
+points_grp <- data.frame(grp = factor(grp_levels, levels = grp_levels, labels = grp_lab),
                          p = unname(pbar[grp_levels])) %>%
   mutate(arr = p - apply_OR(p, OR_REF))
 
 fig2 <- ggplot(courbe, aes(p, arr)) +
   geom_line(linewidth = 1, color = "#4a4a4a") +
   geom_point(data = points_grp, aes(color = grp), size = 2.8) +
-  scale_color_manual(values = pal, name = NULL) +
+  scale_color_manual(values = pal_lab, name = NULL) +
   labs(x = "Predicted risk of death (p)",
        y = "Absolute risk reduction") +
   theme_journal() +
@@ -1317,7 +1325,7 @@ df_fig3 <- res1 %>%
   select(sous_groupe, NSN_formule, NSN_non_ajuste, NSN_ajuste) %>%
   pivot_longer(-sous_groupe, names_to = "methode", values_to = "NSN") %>%
   mutate(methode     = factor(lab_methode[methode], levels = lab_methode),
-         sous_groupe = factor(sous_groupe, levels = grp_levels))
+         sous_groupe = factor(sous_groupe, levels = grp_levels, labels = grp_lab))
 
 y_floor <- min(df_fig3$NSN, na.rm = TRUE) * 0.75
 
@@ -1339,7 +1347,7 @@ print(fig3)
 
 # ---- FIGURE 4: sample-size inflation factor by method ------------------------
 fig4 <- res1 %>%
-  transmute(sous_groupe = factor(sous_groupe, levels = grp_levels),
+  transmute(sous_groupe = factor(sous_groupe, levels = grp_levels, labels = grp_lab),
             `Unadjusted` = ratio_non_ajuste, `Adjusted` = ratio_ajuste) %>%
   pivot_longer(-sous_groupe, names_to = "analyse", values_to = "ratio") %>%
   mutate(analyse = factor(analyse, levels = c("Unadjusted", "Adjusted"))) %>%
@@ -1351,32 +1359,32 @@ fig4 <- res1 %>%
   scale_fill_manual(values = c("Unadjusted" = "#a30000",
                                "Adjusted" = "#1c4e80"), name = NULL) +
   scale_y_continuous(expand = expansion(mult = c(0, 0.10))) +
-  labs(x = NULL, y = "Required / formula sample size") +
+  labs(x = NULL, y = LAB_FACTEUR) +
   theme_journal() +
   theme(axis.text.x = element_text(angle = 20, hjust = 1))
 print(fig4)
 
 # ---- FIGURE 5: ratio according to the target odds ratio ----------------------
 fig5 <- res2 %>%
-  mutate(sous_groupe = factor(sous_groupe, levels = grp_levels)) %>%
+  mutate(sous_groupe = factor(sous_groupe, levels = grp_levels, labels = grp_lab)) %>%
   ggplot(aes(OR, ratio, color = sous_groupe)) +
   geom_hline(yintercept = 1, linetype = 3, color = "grey60") +
   geom_line(linewidth = .8) + geom_point(size = 2) +
-  annotate("text", x = 0.90, y = 1.18, label = "Formula (reference)",
+  annotate("text", x = 0.90, y = 1.18, label = "No inflation",
            color = "grey45", size = 3, hjust = 0) +
-  scale_color_manual(values = pal, name = NULL) +
+  scale_color_manual(values = pal_lab, name = NULL) +
   scale_x_reverse(breaks = seq(0.50, 0.90, 0.05)) +
   scale_y_continuous(breaks = seq(1, 7, 1)) +
   coord_cartesian(ylim = c(0.9, max(res2$ratio) * 1.05)) +
   labs(x = "Patient-level odds ratio (stronger effect to the right)",
-       y = "Required / formula sample size") +
+       y = LAB_FACTEUR) +
   theme_journal() +
   guides(color = guide_legend(nrow = 2, byrow = TRUE))
 print(fig5)
 
 # ---- FIGURE 6: sample-size inflation factor by effect scale ------------------
 fig6 <- res3 %>%
-  transmute(sous_groupe = factor(sous_groupe, levels = grp_levels),
+  transmute(sous_groupe = factor(sous_groupe, levels = grp_levels, labels = grp_lab),
             `Constant OR` = ratio_OR, `Constant ARR` = ratio_ARR,
             `Constant RR` = ratio_RR) %>%
   pivot_longer(-sous_groupe, names_to = "echelle", values_to = "ratio") %>%
@@ -1391,7 +1399,7 @@ fig6 <- res3 %>%
                                "Constant ARR" = "#b8860b",
                                "Constant RR" = "#1c4e80"), name = NULL) +
   scale_y_continuous(expand = expansion(mult = c(0, 0.10))) +
-  labs(x = NULL, y = "Required / formula sample size") +
+  labs(x = NULL, y = LAB_FACTEUR) +
   theme_journal() +
   theme(axis.text.x = element_text(angle = 20, hjust = 1))
 print(fig6)
@@ -1459,8 +1467,10 @@ fig8 <- tibble(p = seq(0, 1, length.out = 600)) %>%
   scale_color_manual(values = c("Constant OR" = "#a30000",
                                 "Constant RR" = "#1c4e80",
                                 "Constant ARR" = "#b8860b"), name = NULL) +
+  scale_x_continuous(breaks = seq(0, 1, 0.25), labels = POURCENT) +
+  scale_y_continuous(breaks = seq(0, 1, 0.25), labels = POURCENT) +
   coord_equal(xlim = c(0, 1), ylim = c(0, 1)) +
-  labs(x = "Baseline risk of death (p)",
+  labs(x = "Baseline risk of death",
        y = "Risk of death under treatment") +
   theme_journal()
 print(fig8)
@@ -1476,7 +1486,7 @@ fig_C1 <- res_centres %>%
   geom_linerange(aes(xmin = IC95_bas, xmax = IC95_haut), color = "grey35") +
   geom_point(aes(size = n), shape = 15, color = "#1c4e80") +
   scale_size_area(max_size = 4, guide = "none") +
-  labs(x = "Unadjusted / formula sample size (bootstrap 95% CI)", y = NULL) +
+  labs(x = paste0(LAB_FACTEUR, ", unadjusted analysis (bootstrap 95% CI)"), y = NULL) +
   theme_journal()
 print(fig_C1)
 
@@ -1488,8 +1498,9 @@ fig_C2 <- ggplot(res_centres, aes(risque_moyen, ratio)) +
   annotate("point", x = unname(est_global["risque_moyen"]), y = ratio_poole,
            shape = 18, size = 5, color = "#a30000") +
   scale_size_area(max_size = 5, guide = "none") +
-  labs(x = "Mean risk of death in the center",
-       y = "Unadjusted / formula sample size") +
+  scale_x_continuous(labels = POURCENT) +
+  labs(x = "Mean predicted risk of death in the center",
+       y = paste0(LAB_FACTEUR, ", unadjusted analysis")) +
   theme_journal()
 print(fig_C2)
 
@@ -1544,7 +1555,7 @@ fig_R2 <- ggplot() +
   coord_cartesian(clip = "off") +
   labs(x = expression(R^2 ~ "of baseline risk" ==
                         frac(Var(p), bar(p) ~ (1 - bar(p)))),
-       y = "Required / formula sample size") +
+       y = LAB_FACTEUR) +
   theme_journal() +
   theme(legend.box = "vertical", legend.box.just = "left",
         legend.spacing.y = unit(1, "mm")) +
@@ -1561,16 +1572,44 @@ pA <- fig1 +
         axis.title.y = element_text()) +
   guides(fill = "none", color = "none")
 
+# Share of patients at high predicted risk (Results and legend of Fig. 1B)
+table_risque_eleve <- data.frame(
+  sous_groupe = grp_levels,
+  pct_sup_50  = round(100 * sapply(pools[grp_levels], function(x) mean(x > 0.5)), 1),
+  pct_sup_90  = round(100 * sapply(pools[grp_levels], function(x) mean(x > 0.9)), 1),
+  row.names = NULL)
+cat("\n=== Share of patients with predicted risk > 50% and > 90% ===\n")
+print(table_risque_eleve, row.names = FALSE, right = FALSE)
+
+# Panel B: logit x-axis, as in panel A, so that the distribution is visible at
+# both ends; the whole curve is kept. ECHELLE_B = "lineaire" gives a linear axis.
+ECHELLE_B <- "logit"   # "logit" or "lineaire"
+
 pB <- fig2
-pB$layers <- c(geom_density(data = tibble(p = echant(pool_gen)),
-                            aes(x = p, y = after_stat(scaled) * 0.085),
-                            bounds = c(0, 1), fill = "grey85", color = NA,
-                            inherit.aes = FALSE),
-               pB$layers)
+if (ECHELLE_B == "logit") {
+  pB$layers <- c(geom_density(data = tibble(p = clamp(echant(pool_gen))),
+                              aes(x = p, y = after_stat(scaled) * 0.085),
+                              fill = "grey85", color = NA, inherit.aes = FALSE),
+                 pB$layers)
+  pB <- pB +
+    scale_x_continuous(trans = scales::logit_trans(),
+                       breaks = c(1e-3, 1e-2, 0.1, 0.5, 0.9, 0.99),
+                       labels = c("0.1%", "1%", "10%", "50%", "90%", "99%")) +
+    coord_cartesian(xlim = c(1e-3, 0.995)) +
+    labs(x = "Predicted risk of death (logit scale)")
+} else {
+  pB$layers <- c(geom_density(data = tibble(p = echant(pool_gen)),
+                              aes(x = p, y = after_stat(scaled) * 0.085),
+                              bounds = c(0, 1), fill = "grey85", color = NA,
+                              inherit.aes = FALSE),
+                 pB$layers)
+  pB <- pB +
+    scale_x_continuous(labels = function(x) paste0(100 * x, "%")) +
+    labs(x = "Predicted risk of death")
+}
 pB <- pB +
-  scale_x_continuous(labels = function(x) paste0(100 * x, "%")) +
   scale_y_continuous(labels = function(x) 100 * x) +
-  labs(x = "Predicted risk of death", y = "Absolute risk reduction (points)") +
+  labs(y = "Absolute risk reduction (points)") +
   guides(color = "none")
 
 lab_panel <- c("Standard formula", "Required, unadjusted analysis",
@@ -1580,17 +1619,20 @@ pC <- df_fig3 %>%
   mutate(methode = factor(lab_panel[as.integer(methode)], levels = lab_panel),
          sous_groupe = fct_rev(sous_groupe)) %>%
   ggplot(aes(sous_groupe, NSN, color = methode, group = fct_rev(methode))) +
-  geom_linerange(aes(ymin = y_floor, ymax = NSN), position = position_dodge(.7),
+  # Linear axis from 0: stem length is proportional to the sample size
+  geom_linerange(aes(ymin = 0, ymax = NSN), position = position_dodge(.7),
                  linewidth = .5, show.legend = FALSE) +
   geom_point(position = position_dodge(.7), size = 2.5) +
   geom_text(aes(label = format(NSN, big.mark = ",", trim = TRUE)),
             position = position_dodge(.7), hjust = -0.3, size = 2.4,
             show.legend = FALSE) +
-  scale_y_log10(labels = function(x) format(x, big.mark = ",", trim = TRUE),
-                expand = expansion(mult = c(0.02, 0.20))) +
+  scale_y_continuous(labels = function(x) format(x, big.mark = ",", trim = TRUE,
+                                                 scientific = FALSE),
+                     limits = c(0, NA), breaks = seq(0, 9000, 3000),
+                     expand = expansion(mult = c(0, 0.22))) +
   scale_color_manual(values = col_meth, breaks = lab_panel, name = NULL) +
-  coord_flip() +
-  labs(x = NULL, y = "Patients per arm (log scale)") +
+  coord_flip(clip = "off") +
+  labs(x = NULL, y = "Patients per arm") +
   theme_journal()
 
 pD <- fig7 +
@@ -1625,7 +1667,8 @@ tables_export <- list(
   S9_sens_calib = sens_calib, S10_sigma_pop = sens_sigma_pop,
   S11_centres = res_centres, S12_synthese_centres = synthese_centres,
   S13_loco = loco, S14_fig1D = df_fig7, S15_puissance = table_puissance,
-  S16_activite_centres = desc_activite)
+  S16_activite_centres = desc_activite,
+  S17_risque_eleve = table_risque_eleve)
 
 for (nm in names(tables_export))
   write.csv2(tables_export[[nm]], file.path(OUTPUT_DIR, paste0(nm, ".csv")),
